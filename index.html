@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小北</title>
+    <title>注意事项管理器</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -44,55 +44,88 @@
             background: #0056b3;
         }
     </style>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
     <div id="container">
-        <h1>小北提醒事项</h1>
-        <input type="text" id="noteText" placeholder="输入提醒事项">
+        <h1>注意事项管理器</h1>
+        <input type="text" id="noteText" placeholder="输入注意事项">
         <input type="datetime-local" id="reminderTime">
-        <button onclick="addNote()">添加提醒事项</button>
+        <button onclick="addNote()">添加注意事项</button>
         <div id="notesList"></div>
     </div>
 
-    <script>
-        const notes = [];
+    <script type="module">
+        // Your web app's Firebase configuration
+        //import firebase from "firebase/compat/app";
+        //import "firebase/firestore";
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzOWS2V4rZ5HEKI0LLbXRbAkmZbj_UIp0",
+            authDomain: "xiaobei-33c35.firebaseapp.com",
+            projectId: "xiaobei-33c35",
+            storageBucket: "xiaobei-33c35.appspot.com",
+            messagingSenderId: "441093228776",
+            appId: "1:441093228776:web:ca98566649d1d67bdd215d",
+            measurementId: "G-N7W0T2YGG5"
+          };
 
-        function addNote() {
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(app);
+
+        window.addNote = function() {
             const noteText = document.getElementById('noteText').value;
             const reminderTime = document.getElementById('reminderTime').value;
 
             if (noteText && reminderTime) {
-                const note = {
+                db.collection('notes').add({
                     text: noteText,
                     time: reminderTime
-                };
-                notes.push(note);
-                displayNotes();
-                document.getElementById('noteText').value = '';
-                document.getElementById('reminderTime').value = '';
+                }).then(() => {
+                    displayNotes();
+                    document.getElementById('noteText').value = '';
+                    document.getElementById('reminderTime').value = '';
+                }).catch(error => {
+                    console.error('Error adding note: ', error);
+                });
             } else {
                 alert('请填写所有字段');
             }
         }
 
-        function deleteNote(index) {
-            notes.splice(index, 1);
-            displayNotes();
+        window.deleteNote = function(id) {
+            db.collection('notes').doc(id).delete().then(() => {
+                displayNotes();
+            }).catch(error => {
+                console.error('Error deleting note: ', error);
+            });
         }
+        
 
         function displayNotes() {
             const notesList = document.getElementById('notesList');
             notesList.innerHTML = '';
-            notes.forEach((note, index) => {
-                const noteDiv = document.createElement('div');
-                noteDiv.className = 'note';
-                noteDiv.innerHTML = `
-                    <span>${note.text} - ${new Date(note.time).toLocaleString()}</span>
-                    <button onclick="deleteNote(${index})">删除</button>
-                `;
-                notesList.appendChild(noteDiv);
+
+            db.collection('notes').get().then(querySnapshot => {
+                querySnapshot.forEach(doc => {
+                    const note = doc.data();
+                    const noteDiv = document.createElement('div');
+                    noteDiv.className = 'note';
+                    noteDiv.innerHTML = `
+                        <span>${note.text} - ${new Date(note.time).toLocaleString()}</span>
+                        <button onclick="deleteNote('${doc.id}')">删除</button>
+                    `;
+                    notesList.appendChild(noteDiv);
+                });
             });
         }
+
+        // Load notes when the page loads
+        window.onload = function() {
+            displayNotes();
+        };
     </script>
 </body>
 </html>
